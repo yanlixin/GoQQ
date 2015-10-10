@@ -7,7 +7,8 @@ import (
 	"regexp"
 	"time"
 )
-
+//https://github.com/Yinzo/SmartQQBot/blob/master/QQLogin.py
+//https://github.com/doomsplayer/gowebQQ/blob/master/test/test.go
 func newClient(t time.Duration) http.Client {
 	jar, err := cookiejar.New(nil)
 	//ErrHandle(err, `x`, `obtain_cookiejar`)
@@ -103,7 +104,7 @@ func LoginByQRCode() (int, error) {
 
 
 
-star_time = date_to_millis(datetime.datetime.utcnow())
+	star_time = date_to_millis(datetime.datetime.utcnow())
 
         error_times = 0
         ret = []
@@ -129,7 +130,7 @@ star_time = date_to_millis(datetime.datetime.utcnow())
             return
         logging.info("QRCode scaned, now logging in.")
 
-	
+
 	return 0, nil
 
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"regexp"
 	"strings"
 	"time"
@@ -23,13 +24,14 @@ func LoginByQRCode() (int, error) {
 	ColorLog("[INFO] Requesting the login pages... \n")
 
 	refer := `http://d.web2.qq.com/proxy.html?v=20110331002&callback=2&id=3`
-	sBody, _ := HttpGet("http://w.qq.com/login.html", refer)
+	sBody, err, _ := HttpGet("http://w.qq.com/login.html", refer)
 	//fmt.Printf("ptui_checkVC is %v\n", sBody)
-
+	fmt.Sprintf("%+v", err)
 	src, _ := getRevalue(`\.src = "(.+?)"`, sBody)
-
-	html, _ := HttpGet(src+"0", refer)
-
+	fmt.Println(src)
+	html, err, cookies := HttpGet(src+"0", refer)
+	fmt.Sprintf("%+v", err)
+	fmt.Sprintf("%+v", cookies)
 	appid, _ := getRevalue(`var g_appid =encodeURIComponent\("(\d+)"\);`, html)
 	sign, _ := getRevalue(`var g_login_sig=encodeURIComponent\("(.*?)"\);`, html)
 	js_ver, _ := getRevalue(`var g_pt_version=encodeURIComponent\("(\d+)"\);`, html)
@@ -60,8 +62,10 @@ func LoginByQRCode() (int, error) {
 	done := make(chan bool, 1)
 	go func() {
 		for {
-			callbackUrl := fmt.Sprintf(`https://ssl.ptlogin2.qq.com/ptqrlogin?webqq_type=10&remember_uin=1&login2qq=1&aid=%s&u1=http%%3A%%2F%%2Fw.qq.com%%2Fproxy.html%%3Flogin2qq%%3D1%%26webqq_type%%3D10&ptredirect=0&ptlang=2052&daid=164&from_ui=1&pttype=1&dumy=&fp=loginerroralert&action=0-0-%d&mibao_css=%s&t=undefined&g=1&js_type=0&js_ver=%s&login_sig=%s`, appid, time.Now().Unix()*1000-star_time, mibao_css, js_ver, sign)
-			html, err := HttpGet(callbackUrl, refer)
+			callbackUrl := fmt.Sprintf(`https://ssl.ptlogin2.qq.com/ptqrlogin?webqq_type=10&remember_uin=1&login2qq=1&aid=%s&u1=http%%3A%%2F%%2Fw.qq.com%%2Fproxy.html%%3Flogin2qq%%3D1%%26webqq_type%%3D10&ptredirect=0&ptlang=2052&daid=164&from_ui=1&pttype=1&dumy=&fp=loginerroralert&action=0-0-%d&mibao_css=%s&t=undefined&g=1&js_type=0&js_ver=%s&login_sig=%s`,
+				appid, time.Now().Unix()*1000-star_time, mibao_css, js_ver, sign)
+
+			html, err, _ := HttpGet(callbackUrl, qr_url)
 			if nil != err {
 				ColorLog("[ERRO] QRCode check faild,error: %s\r\n  ", err)
 			}
@@ -70,12 +74,14 @@ func LoginByQRCode() (int, error) {
 			time.Sleep(time.Second)
 
 			ret := strings.Split(html, "'")
-			fmt.Printf("%+v", ret)
-			if ret[1] == "0" || ret[1] == "65" {
+			//fmt.Printf("%+v \r\n", ret[1])
+			if ret[1] == "65" {
+				done <- false
 				// 65: QRCode 失效, 0: 验证成功, 66: 未失效, 67: 验证中
 				break
 			}
 			if ret[1] == "0" || error_times > 1 {
+				fmt.Printf("%s \r\n", "Done")
 				done <- true
 			}
 			error_times += 1

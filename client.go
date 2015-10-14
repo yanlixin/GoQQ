@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/cookiejar"
+	"strings"
 
 	"os"
 	"time"
@@ -88,4 +89,37 @@ func HttpDown(url string, path string, refer string) error {
 	}
 	return nil
 
+}
+func HttpPost(url string, data string, refer string) (string, error) {
+	/*
+	defer func() {
+		if e := recover(); e != nil {
+			err = e.(error)
+		}
+	}()*/
+	DebugLog("\nPOST: URL: %v\nDATA: %v", url, data)
+	//req, err := http.NewRequest("POST", u, strings.NewReader(data.Encode()))
+	req, err := http.NewRequest("POST", url, strings.NewReader(data))
+	//ErrHandle(err, `p`)
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	if client.Jar != nil {
+		for _, cookie := range client.Jar.Cookies(req.URL) {
+			req.AddCookie(cookie)
+		}
+	}
+
+	req.Header.Add(`referer`, `http://d.web2.qq.com/proxy.html?v=20110331002&callback=2&id=3`)
+
+	res, err := client.Do(req)
+	if nil !=err{
+		return "",err
+	}
+	//ErrHandle(err, `p`)
+	defer res.Body.Close()
+	body := ReadString(res.Body)
+	client.Jar.SetCookies(req.URL, res.Cookies())
+	DebugLog("%+v", res)
+	return body, nil
 }

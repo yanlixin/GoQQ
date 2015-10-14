@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/astaxie/beego/logs"
 	"runtime"
 	"strings"
 	"time"
@@ -22,7 +23,23 @@ const (
 	SUCC     = "SUCC"
 )
 
+var Logger *logs.BeeLogger
+
+func init() {
+	Logger = logs.NewLogger(10000)
+	Logger.SetLogger("console", "")
+	Logger.SetLogger("file", `{"filename":"log.txt"}`)
+	Logger.EnableFuncCallDepth(true)
+}
+func DebugLog(format string, a ...interface{}) {
+	if nil != Logger {
+		Logger.Debug(fmt.Sprintf(format, a...))
+	}
+}
 func ColorLog(format string, a ...interface{}) {
+	if nil != Logger {
+		Logger.Error(fmt.Sprintf(format, a...))
+	}
 	fmt.Print(ColorLogS(format, a...))
 }
 func ColorLogS(format string, a ...interface{}) string {
@@ -76,6 +93,7 @@ func getColorLevel(level string) string {
 	level = strings.ToUpper(level)
 	switch level {
 	case INFO:
+
 		return fmt.Sprintf("\033[%dm%s\033[0m", Blue, level)
 	case TRAC:
 		return fmt.Sprintf("\033[%dm%s\033[0m", Blue, level)

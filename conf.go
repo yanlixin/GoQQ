@@ -18,7 +18,7 @@ var defaultConf = `{
 }
 `
 var conf struct {
-	Version int `json:"version"`
+	Version        int      `json:"version"`
 	CmdArgs        []string `json:"cmd_args"`
 	Envs           []string
 	ConnectReferer string `json:"ConnectReferer"`
@@ -27,6 +27,9 @@ var conf struct {
 	TucaoPath      string `json:"TucaoPath"`
 }
 
+func init() {
+	loadConfig()
+}
 func loadConfig() error {
 	f, err := os.Open("goqq.json")
 	if nil != err {

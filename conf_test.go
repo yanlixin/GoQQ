@@ -7,10 +7,9 @@ import (
 
 func Test_loadConfig(t *testing.T) {
 	err := loadConfig()
-	if nil!=err{
-		t.Errorf("%+v",err)
-		fmt.Sprintf("%+v",err)
+	if nil != err {
+		t.Errorf("%+v", err)
+		fmt.Sprintf("%+v", err)
 	}
-	
-	
+
 }

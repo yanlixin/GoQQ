@@ -8,26 +8,17 @@ import (
 const CONF_VER = 0
 
 var defaultConf = `{
-	"version":0,
-	"gopm":{"enable":false,
-		"install":false
-	}
-	"cmmd_args":[],
+	"version":1,
+	"cmd_args":[],
 	"evns":[],
 	"ConnectReferer":"http://d.web2.qq.com/proxy.html?v=20030916001&callback=1&id=2",
 	"SmartQQUrl":"http://w.qq.com/login.html",
 	"QRCodePath":"./v.jpg",
-	"TucaoPath":"./data/tucao_save/",
-
-
+	"TucaoPath":"./data/tucao_save/"
 }
 `
 var conf struct {
 	Version int `json:"version"`
-	Gopm    struct {
-		Enable  bool
-		Install bool
-	}
 	CmdArgs        []string `json:"cmd_args"`
 	Envs           []string
 	ConnectReferer string `json:"ConnectReferer"`

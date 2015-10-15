@@ -2,22 +2,25 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"math/rand"
 	"net/url"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
 
-var UserInfo struct {
-	UserName   string
-	Account    string
-	ClientId   int
-	PTWebQQ    string
-	FriendList map[string]string
-	VFWebQQ    string
-	PSessionId string
+type UserInfo struct {
+	username   string
+	account    string
+	clientid   int
+	ptwebqq    string
+	friendlist map[string]string
+	vfwebqq    string
+	psessionid string
 }
 
 //https://github.com/Yinzo/SmartQQBot/blob/master/QQLogin.py
@@ -69,13 +72,13 @@ func LoginByQRCode() (int, error) {
 	error_times := 0
 	qr_url := fmt.Sprintf("https://ssl.ptlogin2.qq.com/ptqrshow?appid=%s&e=0&l=L&s=8&d=72&v=4", appid)
 	var ret []string
-	done := make(chan bool, 1)
+	done := make(chan string, 1)
 	go func() {
 
 		err := HttpDown(qr_url, conf.QRCodePath, refer)
 		if nil != err {
 			ColorLog("[ERRO] DownLoad the QRCode faild,%+v \n", err)
-			done <- false
+			done <- ""
 		}
 		fmt.Println("Please scan the downloaded QRCode")
 
@@ -94,24 +97,24 @@ func LoginByQRCode() (int, error) {
 			//fmt.Printf("%+v \r\n", ret[1])
 			if ret[1] == "65" {
 				fmt.Println("")
-				done <- false
+				done <- ""
 				// 65: QRCode 失效, 0: 验证成功, 66: 未失效, 67: 验证中
 				break
 			}
 			if ret[1] == "0" {
 				fmt.Println("")
-				done <- true
+				done <- html
 			}
 
 		}
 		if error_times > 10 {
 			fmt.Printf("%s \r\n", "Done")
-			done <- false
+			done <- ""
 		}
 		error_times += 1
 	}()
-	status := <-done
-	if status {
+	body := <-done
+	if len(body) > 0 {
 		ColorLog("[INFO] QRCode scaned, now logging in.")
 
 		// 删除QRCode文件
@@ -121,89 +124,72 @@ func LoginByQRCode() (int, error) {
 		//}
 
 		os.Remove(conf.QRCodePath)
-		userinfo := &UserInfo
-		// 记录登陆账号的昵称
-
-		userinfo.UserName = ret[11]
-		DebugLog(userinfo.UserName)
-		DebugLog("rev[5]:%s\r\n", ret[5])
-		html, err := HttpGet(ret[5], refer)
-		if nil != err {
-			ColorLog("[ERRO] Get Login Status faild,%+v \n", err)
-			//return 10010,err
-		}
-		DebugLog("mibao_res html:  %s\r\n", html)
-
-		url1, err := getRevalue(` src="(.+?)"`, html)
-		if nil != err {
-			ColorLog("[ERRO] Get Login Status faild,%+v \n", err)
-			return 10010, err
-		}
-		DebugLog("url=%s\r\n", url1)
-
-		if url1 != "" {
-			html, err := HttpGet(strings.Replace(url1, "&amp;", "&", 0), refer)
-			if nil != err {
-				ColorLog("[ERRO] Get Login Status faild,%+v \n", err)
-				return 10010, err
-			}
-			url1, err = getRevalue(`location\.href=""(.+?)""`, html)
-			if nil != err {
-				ColorLog("[ERRO] Get Login Status faild,%+v \n", err)
-				return 10010, err
-			}
-			DebugLog("url=%s\r\n", url1)
-			none, err := HttpGet(url1, refer)
-			if nil != err {
-				ColorLog("[ERRO] Get Login Status faild,%+v \n", err)
-				return 10010, err
-			}
-			DebugLog(none)
-		}
-		u, _ := url.Parse(fmt.Sprintf("%v", ret[5]))
-		client.Jar.Cookies(u)
-		//self.ptwebqq = self.req.getCookie('ptwebqq')
-		login_error := 1
-		var ret map[string]interface{}
-
-		for login_error > 0 {
-			r := fmt.Sprintf(`{"ptwebqq":"%s","clientid":%d,"psessionid":"%s","status":"online"}`,
-				userinfo.PTWebQQ,
-				userinfo.ClientId,
-				userinfo.PSessionId)
-			data := fmt.Sprintf(`{"r":%s}`, r)
-			html, err := HttpPost("http://d.web2.qq.com/channel/login2", data, refer)
-			if nil != err {
-
-				ColorLog("[ERRO] Post User Login fail,%+v \n", err)
-
-			}
-			DebugLog("login html: %s ", html)
-			byt := []byte(html)
-			err1 := json.Unmarshal(byt, &ret)
-			if nil != err1 {
-				login_error += 1
-				ColorLog("[ERRO] Get login fail, retrying...,%+v \n", err1)
-
-			} else {
-				login_error = 0
-			}
-
-			if ret["retcode"] != "0" {
-				DebugLog("%+v", ret)
-				ColorLog("[ERRO] return code:,%+v \n", ret["retcode"])
-
-				return 10011, nil
-			}
-		}
-		//vfwebqq := ret["result"]["vfwebqq"]
-		//psessionid := ret["result"]["psessionid"]
-		//account := ret["result"]["uin"]
-
+		setLoginStatus(body, ret)
 	} else {
 		ColorLog("[INFO] QRCode 失效.")
 	}
 
 	return 0, nil
+
+}
+func setLoginStatus(sBody string, ret []string) (userInfo *UserInfo, err error) {
+	rd := rand.New(rand.NewSource(time.Now().UnixNano()))
+	clientid := strconv.Itoa(rd.Intn(90000000) + 10000000)
+	qq := &UserInfo{}
+	// 记录登陆账号的昵称
+
+	qq.username = ret[11]
+	DebugLog(qq.username)
+
+	reg := regexp.MustCompile(`ptuiCB\('0','0','(.*)','0','登录成功！', '.*'\);`)
+
+	if !reg.MatchString(sBody) {
+
+		panic(errors.New(`第一次握手失败（密码错误？）`))
+	}
+
+	ssl := reg.FindStringSubmatch(sBody)
+	re, err := HttpGet1(ssl[1], conf.ConnectReferer)
+	if nil !=err{
+		return nil,err
+	}
+	defer re.Body.Close()
+
+	v := url.Values{}
+	v.Set(`clientid`, clientid)
+	v.Set(`psessionid`, `null`)
+
+	c, err := json.Marshal(
+		map[string]interface{}{
+			`status`:     `online`,
+			`ptwebqq`:    qq.ptwebqq,
+			`passwd_sig`: ``,
+			`clientid`:   qq.clientid,
+			`psessionid`: nil})
+	v.Set(`r`, string(c))
+
+	re, err = HttpPost(`http://d.web2.qq.com/channel/login2`, v)
+
+	if err != nil {
+		return nil ,err
+	}
+	defer re.Body.Close()
+
+	retb := ReadByte(re.Body)
+	fmt.Printf("%v",retb)
+	//lg.Debug("online info is %s", retb)
+
+	//js, err := simplejson.NewJson(retb)
+	//if err != nil {
+	//	panic(err)
+	//}
+
+	//if i := js.Get(`retcode`).MustFloat64(); i != float64(0) {
+	//	panic(fmt.Errorf("第二次握手失败,错误码:%v", i))
+	//}
+
+	//qq.vfwebqq = js.Get(`result`).Get(`vfwebqq`).MustString()
+	//qq.psessionid = js.Get(`result`).Get(`psessionid`).MustString()
+	return qq ,nil
 
 }

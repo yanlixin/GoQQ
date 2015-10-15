@@ -41,33 +41,28 @@ func LoginByQRCode() (int, error) {
 	ColorLog("[INFO] Requesting the login pages... \n")
 
 	refer := conf.ConnectReferer
-	sBody, err := HttpGet(conf.SmartQQUrl, refer)
+	res, err := HttpGet(conf.SmartQQUrl, refer)
 	if nil != err {
 		ColorLog("[ERRO] Requesting the login faild,%+v \n", err)
 		return 10001, err
 	}
+	defer res.Body.Close()
+	body := ReadString(res.Body)
 
-	src, _ := getRevalue(`\.src = "(.+?)"`, sBody)
+	src, _ := getRevalue(`\.src = "(.+?)"`, body)
 	//fmt.Println(src)
-	html, err := HttpGet(src+"0", refer)
+	res, err = HttpGet(src+"0", refer)
 	if nil != err {
 		ColorLog("[ERRO] Requesting the QRCode login faild,%+v \n", err)
 		return 10002, err
 	}
+	defer res.Body.Close()
+	body = ReadString(res.Body)
+	appid, _ := getRevalue(`var g_appid =encodeURIComponent\("(\d+)"\);`, body)
+	sign, _ := getRevalue(`var g_login_sig=encodeURIComponent\("(.*?)"\);`, body)
+	js_ver, _ := getRevalue(`var g_pt_version=encodeURIComponent\("(\d+)"\);`, body)
+	mibao_css, _ := getRevalue(`var g_mibao_css=encodeURIComponent\("(.+?)"\);`, body)
 
-	appid, _ := getRevalue(`var g_appid =encodeURIComponent\("(\d+)"\);`, html)
-	sign, _ := getRevalue(`var g_login_sig=encodeURIComponent\("(.*?)"\);`, html)
-	js_ver, _ := getRevalue(`var g_pt_version=encodeURIComponent\("(\d+)"\);`, html)
-	mibao_css, _ := getRevalue(`var g_mibao_css=encodeURIComponent\("(.+?)"\);`, html)
-	/*
-		fmt.Printf("ptui_checkVC is %s\n", src)
-
-		fmt.Printf("html is %+v\n", html)
-		fmt.Printf("appid is %s\n", appid)
-		fmt.Printf("sign is %s\n", sign)
-		fmt.Printf("js_ver is %s\n", js_ver)
-		fmt.Printf("mibao_css is %s\n", mibao_css)
-	*/
 	star_time := time.Now().Unix() * 1000
 	error_times := 0
 	qr_url := fmt.Sprintf("https://ssl.ptlogin2.qq.com/ptqrshow?appid=%s&e=0&l=L&s=8&d=72&v=4", appid)
@@ -86,14 +81,16 @@ func LoginByQRCode() (int, error) {
 			checkStatusUrl := fmt.Sprintf(`https://ssl.ptlogin2.qq.com/ptqrlogin?webqq_type=10&remember_uin=1&login2qq=1&aid=%s&u1=http%%3A%%2F%%2Fw.qq.com%%2Fproxy.html%%3Flogin2qq%%3D1%%26webqq_type%%3D10&ptredirect=0&ptlang=2052&daid=164&from_ui=1&pttype=1&dumy=&fp=loginerroralert&action=0-0-%d&mibao_css=%s&t=undefined&g=1&js_type=0&js_ver=%s&login_sig=%s`,
 				appid, time.Now().Unix()*1000-star_time, mibao_css, js_ver, sign)
 
-			html, err := HttpGet(checkStatusUrl, qr_url)
+			res, err := HttpGet(checkStatusUrl, qr_url)
 			if nil != err {
 				ColorLog("[ERRO] Check the QRCode Login Status faild,%+v \n", err)
 			}
+			defer res.Body.Close()
+			body := ReadString(res.Body)
 			fmt.Printf(".")
 
 			time.Sleep(time.Second)
-			ret = strings.Split(html, "'")
+			ret = strings.Split(body, "'")
 			//fmt.Printf("%+v \r\n", ret[1])
 			if ret[1] == "65" {
 				fmt.Println("")
@@ -103,7 +100,7 @@ func LoginByQRCode() (int, error) {
 			}
 			if ret[1] == "0" {
 				fmt.Println("")
-				done <- html
+				done <- body
 			}
 
 		}
@@ -113,18 +110,12 @@ func LoginByQRCode() (int, error) {
 		}
 		error_times += 1
 	}()
-	body := <-done
-	if len(body) > 0 {
+	loginStatus := <-done
+	if len(loginStatus) > 0 {
 		ColorLog("[INFO] QRCode scaned, now logging in.")
-
-		// 删除QRCode文件
-		//if _, err := os.Stat(conf.QRCodePath); os.IsNotExist(err) {
-		//	ColorLog("[INFO] No such file or directory: %s", conf.QRCodePath)
-		//
-		//}
-
+		DebugLog("LoginStatus:%s", loginStatus)
 		os.Remove(conf.QRCodePath)
-		setLoginStatus(body, ret)
+		setLoginStatus(loginStatus, ret)
 	} else {
 		ColorLog("[INFO] QRCode 失效.")
 	}
@@ -149,9 +140,9 @@ func setLoginStatus(sBody string, ret []string) (userInfo *UserInfo, err error) 
 	}
 
 	ssl := reg.FindStringSubmatch(sBody)
-	re, err := HttpGet1(ssl[1], conf.ConnectReferer)
-	if nil !=err{
-		return nil,err
+	re, err := HttpGet(ssl[1], conf.ConnectReferer)
+	if nil != err {
+		return nil, err
 	}
 	defer re.Body.Close()
 
@@ -171,12 +162,12 @@ func setLoginStatus(sBody string, ret []string) (userInfo *UserInfo, err error) 
 	re, err = HttpPost(`http://d.web2.qq.com/channel/login2`, v)
 
 	if err != nil {
-		return nil ,err
+		return nil, err
 	}
 	defer re.Body.Close()
 
 	retb := ReadByte(re.Body)
-	fmt.Printf("%v",retb)
+	fmt.Printf("%v", retb)
 	//lg.Debug("online info is %s", retb)
 
 	//js, err := simplejson.NewJson(retb)
@@ -190,6 +181,6 @@ func setLoginStatus(sBody string, ret []string) (userInfo *UserInfo, err error) 
 
 	//qq.vfwebqq = js.Get(`result`).Get(`vfwebqq`).MustString()
 	//qq.psessionid = js.Get(`result`).Get(`psessionid`).MustString()
-	return qq ,nil
+	return qq, nil
 
 }

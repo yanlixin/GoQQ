@@ -35,28 +35,7 @@ func newClient(t time.Duration) http.Client {
 	}
 }
 
-func HttpGet(url string, refer string) (string, error) {
-
-	req, err := http.NewRequest("GET", url, nil)
-
-	if err != nil {
-
-		return "", err
-	}
-	req.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
-	req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.125 Safari/537.36")
-	req.Header.Add("Host", "ssl.ptlogin2.qq.com")
-	req.Header.Add("referer", refer)
-	res, err := client.Do(req)
-	if err != nil {
-
-		return "", err
-	}
-	defer res.Body.Close()
-	body := ReadString(res.Body)
-	return body, nil
-}
-func HttpGet1(url string, refer string) (sre *http.Response, err error) {
+func HttpGet(url string, refer string) (res *http.Response, err error) {
 
 	req, err := http.NewRequest("GET", url, nil)
 
@@ -68,37 +47,24 @@ func HttpGet1(url string, refer string) (sre *http.Response, err error) {
 	req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.125 Safari/537.36")
 	req.Header.Add("Host", "ssl.ptlogin2.qq.com")
 	req.Header.Add("referer", refer)
-	res, err := client.Do(req)
+	res, err = client.Do(req)
 	if err != nil {
 
 		return nil, err
 	}
-	return res, nil
+
+	return
 }
+
 func HttpDown(url string, path string, refer string) error {
 
 	out, err := os.Create(path)
 	defer out.Close()
-
-	req, err := http.NewRequest("GET", url, nil)
-
-	if err != nil {
-		ColorLog("[ERRO] Download fail ,Error:%+v\n", err)
-		return err
-	}
-
-	req.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
-	req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.125 Safari/537.36")
-	req.Header.Add("Host", "ssl.ptlogin2.qq.com")
-	req.Header.Add("referer", refer)
-
-	res, err := client.Do(req)
-
+	res, err := HttpGet(url, refer)
 	if err != nil {
 
-		return err
+		return nil
 	}
-
 	defer res.Body.Close()
 
 	none, err := io.Copy(out, res.Body)
@@ -118,8 +84,8 @@ func HttpPost(u string, data url.Values) (re *http.Response, err error) {
 	}()
 	//lg.Trace("\nPOST: URL: %v\nDATA: %v", u, data.Encode())
 	req, err := http.NewRequest("POST", u, strings.NewReader(data.Encode()))
-	if nil !=err{
-		return nil ,err
+	if nil != err {
+		return nil, err
 	}
 	//ErrHandle(err, `p`)
 
@@ -134,12 +100,12 @@ func HttpPost(u string, data url.Values) (re *http.Response, err error) {
 	req.Header.Add(`referer`, `http://d.web2.qq.com/proxy.html?v=20110331002&callback=2&id=3`)
 
 	re, err = client.Do(req)
-	if nil !=err{
-		return nil ,err
+	if nil != err {
+		return nil, err
 	}
 
 	//ErrHandle(err, `p`)
 
 	client.Jar.SetCookies(req.URL, re.Cookies())
-	return re ,nil
+	return re, nil
 }

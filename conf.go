@@ -25,7 +25,6 @@ var conf struct {
 	SmartQQUrl     string `json:"SmartQQUrl"`
 	QRCodePath     string `json:"QRCodePath"`
 	TucaoPath      string `json:"TucaoPath"`
-	
 }
 
 func init() {

@@ -167,7 +167,10 @@ func setLoginStatus(sBody string, ret []string) (userInfo *UserInfo, err error) 
 	defer re.Body.Close()
 
 	retb := ReadByte(re.Body)
+	var ps map[string]interface{}
 	fmt.Printf("%v", retb)
+	json.Unmarshal(retb, &ps)
+	fmt.Printf("%v", ps)
 	//lg.Debug("online info is %s", retb)
 
 	//js, err := simplejson.NewJson(retb)

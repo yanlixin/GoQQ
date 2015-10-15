@@ -52,6 +52,18 @@ func HttpGet(url string, refer string) (res *http.Response, err error) {
 
 		return nil, err
 	}
+	if qq.ptwebqq == `` {
+		for _, v := range res.Cookies() {
+			if v.Name == `ptwebqq` {
+				qq.ptwebqq = v.Value
+				continue
+			}
+			if v.Name == "verifysession" {
+				qq.verifysession = v.Value
+				continue
+			}
+		}
+	}
 
 	return
 }

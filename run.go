@@ -39,6 +39,7 @@ func runApp(cmd *Command, args []string) int {
 	}
 	if status == 0 {
 		ColorLog("[INFO] Login succeed\n")
+		
 
 	} else {
 

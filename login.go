@@ -13,14 +13,21 @@ import (
 	"time"
 )
 
+var qq *UserInfo
+
+func init() {
+	qq = &UserInfo{}
+}
+
 type UserInfo struct {
-	username   string
-	account    string
-	clientid   int
-	ptwebqq    string
-	friendlist map[string]string
-	vfwebqq    string
-	psessionid string
+	username      string
+	account       string
+	clientid      int
+	ptwebqq       string
+	friendlist    map[string]string
+	vfwebqq       string
+	psessionid    string
+	verifysession string
 }
 
 //https://github.com/Yinzo/SmartQQBot/blob/master/QQLogin.py
@@ -115,7 +122,12 @@ func LoginByQRCode() (int, error) {
 		ColorLog("[INFO] QRCode scaned, now logging in.")
 		DebugLog("LoginStatus:%s", loginStatus)
 		os.Remove(conf.QRCodePath)
-		setLoginStatus(loginStatus, ret)
+		statusCode,err:=setLoginStatus(loginStatus, ret)
+		if nil !=err {
+			ColorLog("[ERRO] Check the QRCode Login Status faild,%+v \n", err)
+			return statusCode,err
+
+		}
 	} else {
 		ColorLog("[INFO] QRCode 失效.")
 	}
@@ -123,10 +135,10 @@ func LoginByQRCode() (int, error) {
 	return 0, nil
 
 }
-func setLoginStatus(sBody string, ret []string) (userInfo *UserInfo, err error) {
+func setLoginStatus(sBody string, ret []string) (statusCode int, err error) {
 	rd := rand.New(rand.NewSource(time.Now().UnixNano()))
 	clientid := strconv.Itoa(rd.Intn(90000000) + 10000000)
-	qq := &UserInfo{}
+
 	// 记录登陆账号的昵称
 
 	qq.username = ret[11]
@@ -142,7 +154,7 @@ func setLoginStatus(sBody string, ret []string) (userInfo *UserInfo, err error) 
 	ssl := reg.FindStringSubmatch(sBody)
 	re, err := HttpGet(ssl[1], conf.ConnectReferer)
 	if nil != err {
-		return nil, err
+		return -1, err
 	}
 	defer re.Body.Close()
 
@@ -158,32 +170,29 @@ func setLoginStatus(sBody string, ret []string) (userInfo *UserInfo, err error) 
 			`clientid`:   qq.clientid,
 			`psessionid`: nil})
 	v.Set(`r`, string(c))
-
 	re, err = HttpPost(`http://d.web2.qq.com/channel/login2`, v)
 
 	if err != nil {
-		return nil, err
+		return -2, err
 	}
 	defer re.Body.Close()
 
 	retb := ReadByte(re.Body)
-	var ps map[string]interface{}
-	fmt.Printf("%v", retb)
-	json.Unmarshal(retb, &ps)
-	fmt.Printf("%v", ps)
-	//lg.Debug("online info is %s", retb)
+	var js map[string]interface{}
+	json.Unmarshal(retb, &js)
+	//DebugLog("%+v", js)
 
-	//js, err := simplejson.NewJson(retb)
-	//if err != nil {
-	//	panic(err)
-	//}
+	if js[`retcode`] != float64(0) {
+		DebugLog("第二次握手失败,错误码:%v", js[`retcode`])
+		return -3, errors.New(fmt.Sprintf("第二次握手失败,错误码:%v", js[`retcode`]))
+	}
+	//var result map[string]interface{}
+	result := js[`result`].(map[string]interface{})
+	//DebugLog("%+v", result)
 
-	//if i := js.Get(`retcode`).MustFloat64(); i != float64(0) {
-	//	panic(fmt.Errorf("第二次握手失败,错误码:%v", i))
-	//}
-
-	//qq.vfwebqq = js.Get(`result`).Get(`vfwebqq`).MustString()
-	//qq.psessionid = js.Get(`result`).Get(`psessionid`).MustString()
-	return qq, nil
+	qq.vfwebqq = result[`vfwebqq`].(string)
+	qq.psessionid = result[`psessionid`].(string)
+	DebugLog("%+v", qq)
+	return 0, nil
 
 }

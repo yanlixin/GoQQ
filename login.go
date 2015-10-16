@@ -22,12 +22,13 @@ func init() {
 type UserInfo struct {
 	username      string
 	account       string
-	clientid      int
+	clientid      string
 	ptwebqq       string
 	friendlist    map[string]string
 	vfwebqq       string
 	psessionid    string
 	verifysession string
+	msgid         int64
 }
 
 //https://github.com/Yinzo/SmartQQBot/blob/master/QQLogin.py

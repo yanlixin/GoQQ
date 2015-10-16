@@ -27,6 +27,20 @@ func init() {
 
 func SendMsg(cmd *Command, args []string) int {
 	ColorLog("[INFO] 发送消息: %s\r\n", args)
+	_, err := GetFriends()
+	if nil != err {
+		ColorLog("[ERRO] Send fail ,Error:%+v\n", err)
+	}
+	code, err := SendBuddyMsgEasy("1726329547", 55440000, "Hello boy!")
+
+	if nil != err {
+		ColorLog("[ERRO] Send fail ,Error:%+v\n", err)
+	}
+	if code == 0 {
+		ColorLog("[INFO] 消息发送成功 !\r\n")
+	} else {
+		ColorLog("[INFO] 消息发送失败 !\r\n")
+	}
 	/*
 		c, _ = f.Read(b)
 		bb = b[:c-1]
@@ -57,6 +71,6 @@ func SendMsg(cmd *Command, args []string) int {
 		//	ips := TestIP(ipMap)
 	*/
 	//writeFile(ips)
-	ColorLog("[INFO] 消息发送成功 !\r\n")
+
 	return 0
 }

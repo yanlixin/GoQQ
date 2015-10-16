@@ -108,3 +108,49 @@ func getColorLevel(level string) string {
 	}
 	return level
 }
+func CalcHash(x string, K string) string {
+	//x = str(x);
+	N := K + "password error"
+	T := ""
+	var V []int
+	for {
+		if len(T) <= len(N) {
+			T += x
+			if len(T) == len(N) {
+				break
+			}
+		} else {
+			T = T[0:len(N)]
+			break
+		}
+	}
+
+	for U, _ := range T {
+		V = append(V, int(T[U])^int(N[U]))
+	}
+    x += ""
+    for (var N = [], T = 0; T < K.length; T++) {
+    	N[T % 4] ^= K.charCodeAt(T);
+    }
+    var U = [
+      'EC',
+      'OK'
+    ],
+    V = [
+    ];
+    V[0] = x >> 24 & 255 ^ U[0].charCodeAt(0);
+    V[1] = x >> 16 & 255 ^ U[0].charCodeAt(1);
+    V[2] = x >> 8 & 255 ^ U[1].charCodeAt(0);
+    V[3] = x & 255 ^ U[1].charCodeAt(1);
+    U = [
+    ];
+	
+	N1 := []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"}
+	T = ""
+	for U, _ := range V {
+		T += N1[V[U]>>4&15]
+		T += N1[V[U]&15]
+	}
+	return T
+
+}

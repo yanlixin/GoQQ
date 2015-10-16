@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
-	"os"
+//"fmt"
+//"os"
 )
 
 var cmdRun = &Command{
@@ -28,9 +28,9 @@ func init() {
 var appname string
 
 func runApp(cmd *Command, args []string) int {
-	curpath, _ := os.Getwd()
-	fmt.Println(curpath)
-	ColorLog("[INFO] Uses '%s' as 'appname'\n", appname)
+	//curpath, _ := os.Getwd()
+	//fmt.Println(curpath)
+	//ColorLog("[INFO] Uses '%s' as 'appname'\n", appname)
 	status, err := LoginByQRCode()
 	if nil != err {
 
@@ -39,7 +39,6 @@ func runApp(cmd *Command, args []string) int {
 	}
 	if status == 0 {
 		ColorLog("[INFO] Login succeed\n")
-		
 
 	} else {
 

@@ -122,10 +122,10 @@ func LoginByQRCode() (int, error) {
 		ColorLog("[INFO] QRCode scaned, now logging in.")
 		DebugLog("LoginStatus:%s", loginStatus)
 		os.Remove(conf.QRCodePath)
-		statusCode,err:=setLoginStatus(loginStatus, ret)
-		if nil !=err {
+		statusCode, err := setLoginStatus(loginStatus, ret)
+		if nil != err {
 			ColorLog("[ERRO] Check the QRCode Login Status faild,%+v \n", err)
-			return statusCode,err
+			return statusCode, err
 
 		}
 	} else {

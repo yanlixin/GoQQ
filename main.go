@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"unsafe"
 )
 
 func init() {
@@ -48,37 +49,78 @@ func (c *Command) Runnable() bool {
 
 var commands = []*Command{
 	cmdRun,
+	cmdSend,
 }
 
 func main() {
 	flag.Usage = usage
 	flag.Parse()
 	log.SetFlags(0)
-	args := flag.Args()
-	if len(args) < 1 {
-		cmd := commands[0]
-		cmd.Flag.Usage = func() { cmd.Usage() }
-		os.Exit(cmd.Run(cmd, nil))
-		//		usage()
-	}
-	if args[0] == "help" {
-		help(args[1:])
-	}
-	for _, cmd := range commands {
-		if cmd.Name() == args[0] && cmd.Run != nil {
+
+	//defer w.Close()
+	for {
+		ColorLog("[INFO] 请输入命令: 1，扫码登录；2，发送消息；q，退出\r\n")
+		//w.WriteString("请输入命令: 1，扫码登录；2，发送消息；q，退出\r\n")
+		b := make([]byte, 100)
+		f := os.Stdin
+		//w := os.Stdout
+		defer f.Close()
+		c, _ := f.Read(b)
+
+
+		bb := b[:c-1]
+		str := *(*string)(unsafe.Pointer(&bb))
+		switch str {
+		case "1":
+			cmd := commands[0]
 			cmd.Flag.Usage = func() { cmd.Usage() }
-			if cmd.CustomFlags {
-				args = args[1:]
-			} else {
-				cmd.Flag.Parse(args[1:])
-				args = cmd.Flag.Args()
-			}
-			os.Exit(cmd.Run(cmd, args))
-			return
+			cmd.Run(cmd, nil)
+		case "2":
+			ColorLog("[INFO] 请输入要广播消息:")
+			b = make([]byte, 10240)
+			f = os.Stdin
+
+			defer f.Close()
+
+			c, _ = f.Read(b)
+			bb = b[:c-1]
+			str = *(*string)(unsafe.Pointer(&bb))
+			ColorLog("[INFO] 输入的消息为: %s\r\n", str)
+			ColorLog("[INFO] 确定要广播此消息吗？(y:是,n:否)")
+			c, _ = f.Read(b)
+			bb = b[:c-1]
+			str = *(*string)(unsafe.Pointer(&bb))
+			ColorLog("[INFO] 消息发送中...")
+			cmd := commands[1]
+			cmd.Flag.Usage = func() { cmd.Usage() }
+			cmd.Run(cmd, nil)
+		case "3":
+			fmt.Printf("1")
+		default:
+			ColorLog("[INFO] 输入无效，请重新输入 \n")
 		}
 
+		if str == "q" {
+			break
+		}
 	}
-	fmt.Fprintf(os.Stderr, "gotester: unknown subcommand %q\nRun 'gotester help' for usage.\n", args[0])
+	/*
+		for _, cmd := range commands {
+			if cmd.Name() == args[0] && cmd.Run != nil {
+				cmd.Flag.Usage = func() { cmd.Usage() }
+				if cmd.CustomFlags {
+					args = args[1:]
+				} else {
+					cmd.Flag.Parse(args[1:])
+					args = cmd.Flag.Args()
+				}
+				os.Exit(cmd.Run(cmd, args))
+				return
+			}
+
+		}
+	*/
+	//fmt.Fprintf(os.Stderr, "gotester: unknown subcommand %q\nRun 'gotester help' for usage.\n", args[0])
 	os.Exit(2)
 }
 

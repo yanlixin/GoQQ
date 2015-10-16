@@ -51,7 +51,17 @@ var commands = []*Command{
 	cmdRun,
 	cmdSend,
 }
+func prompt() string{
+		b := make([]byte, 100)
+		f := os.Stdin
+		//w := os.Stdout
+		defer f.Close()
+		c, _ := f.Read(b)
 
+		bb := b[:c-1]
+		str := *(*string)(unsafe.Pointer(&bb))
+		return str
+}
 func main() {
 	flag.Usage = usage
 	flag.Parse()
@@ -66,7 +76,6 @@ func main() {
 		//w := os.Stdout
 		defer f.Close()
 		c, _ := f.Read(b)
-
 
 		bb := b[:c-1]
 		str := *(*string)(unsafe.Pointer(&bb))
@@ -84,16 +93,17 @@ func main() {
 
 			c, _ = f.Read(b)
 			bb = b[:c-1]
-			str = *(*string)(unsafe.Pointer(&bb))
-			ColorLog("[INFO] 输入的消息为: %s\r\n", str)
+			msg := *(*string)(unsafe.Pointer(&bb))
+			ColorLog("[INFO] 输入的消息为: %s\r\n", msg)
 			ColorLog("[INFO] 确定要广播此消息吗？(y:是,n:否)")
 			c, _ = f.Read(b)
 			bb = b[:c-1]
-			str = *(*string)(unsafe.Pointer(&bb))
-			ColorLog("[INFO] 消息发送中...")
-			cmd := commands[1]
-			cmd.Flag.Usage = func() { cmd.Usage() }
-			cmd.Run(cmd, nil)
+			confim := *(*string)(unsafe.Pointer(&bb))
+			if "Y" == strings.ToUpper(confim) {
+				cmd := commands[1]
+				cmd.Flag.Usage = func() { cmd.Usage() }
+				cmd.Run(cmd, nil)
+			}
 		case "3":
 			fmt.Printf("1")
 		default:

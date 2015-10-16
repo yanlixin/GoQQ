@@ -26,7 +26,7 @@ func init() {
 }
 
 func SendMsg(cmd *Command, args []string) int {
-
+	ColorLog("[INFO] 发送消息: %s\r\n", args)
 	/*
 		c, _ = f.Read(b)
 		bb = b[:c-1]

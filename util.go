@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/astaxie/beego/logs"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/astaxie/beego/logs"
 )
 
 const (
@@ -148,28 +150,29 @@ func CalcHash(x string, K string) string {
 	*/
 	//x += ""
 	var N []rune
+	xu := []rune(K)
 	for T := 0; T < len(K); T++ {
-		N[T%4] ^= charCodeAt(K, T)
+		N[T%4] ^= xu[T]
 	}
-	U := []string{
-		"EC",
-		"OK",
-	}
-	var V []rune
-	V[0] = x>>24&255 ^ charCodeAt(U[0], 0)
-	V[1] = x>>16&255 ^ charCodeAt(U[0], 1)
-	V[2] = x>>8&255 ^ charCodeAt(U[1], 0)
-	V[3] = x&255 ^ charCodeAt(U[1], 1)
+	EC := []rune("EC")
+	OK := []rune("OK")
+
+	var V []int 
+	xi,_ := strconv.Atoi(x)
+	V[0] = xi>>24&255 ^ EC[0]
+	V[1] = xi>>16&255 ^ EC[1]
+	V[2] = xi>>8&255 ^ OK[0]
+	V[3] = xi&255 ^ OK[1]
 	var U []rune
-	for T = 0; T < 8; T++ {
+	for T := 0; T < 8; T++ {
 
 		if T%2 == 0 {
-			U[T] = N[T>>1]
+			//U[T] = N[T>>1]
 		} else {
-			U[T] = V[T>>1]
+			//U[T] = V[T>>1]
 		}
 	}
-	N1 := []string{
+	N1 := []rune{
 		'0',
 		'1',
 		'2',
@@ -188,9 +191,9 @@ func CalcHash(x string, K string) string {
 		'F',
 	}
 	V1 := ""
-	for T = 0; T < U.length; T++ {
-		V1 += N1[U[T]>>4&15]
-		V1 += N1[U[T]&15]
+	for T := 0; T < len(U); T++ {
+		V1 += string(N1[U[T]>>4&15])
+		V1 += string(N1[U[T]&15])
 	}
-	return V
+	return V1
 }

@@ -51,29 +51,16 @@ var commands = []*Command{
 	cmdRun,
 	cmdSend,
 }
-func prompt() string{
-		b := make([]byte, 100)
-		f := os.Stdin
-		//w := os.Stdout
-		defer f.Close()
-		c, _ := f.Read(b)
 
-		bb := b[:c-1]
-		str := *(*string)(unsafe.Pointer(&bb))
-		return str
-}
 func main() {
 	flag.Usage = usage
 	flag.Parse()
 	log.SetFlags(0)
 
-	//defer w.Close()
 	for {
 		ColorLog("[INFO] 请输入命令: 1，扫码登录；2，发送消息；q，退出\r\n")
-		//w.WriteString("请输入命令: 1，扫码登录；2，发送消息；q，退出\r\n")
 		b := make([]byte, 100)
 		f := os.Stdin
-		//w := os.Stdout
 		defer f.Close()
 		c, _ := f.Read(b)
 
@@ -86,23 +73,28 @@ func main() {
 			cmd.Run(cmd, nil)
 		case "2":
 			ColorLog("[INFO] 请输入要广播消息:")
-			b = make([]byte, 10240)
-			f = os.Stdin
+			b := make([]byte, 10240)
+			f := os.Stdin
 
 			defer f.Close()
 
-			c, _ = f.Read(b)
-			bb = b[:c-1]
+			c, _ := f.Read(b)
+			bb := b[:c]
 			msg := *(*string)(unsafe.Pointer(&bb))
 			ColorLog("[INFO] 输入的消息为: %s\r\n", msg)
 			ColorLog("[INFO] 确定要广播此消息吗？(y:是,n:否)")
-			c, _ = f.Read(b)
-			bb = b[:c-1]
-			confim := *(*string)(unsafe.Pointer(&bb))
+			b1 := make([]byte, 10240)
+			f1 := os.Stdin
+
+			defer f1.Close()
+
+			c1, _ := f1.Read(b1)
+			bb1 := b1[:c1-1]
+			confim := *(*string)(unsafe.Pointer(&bb1))
 			if "Y" == strings.ToUpper(confim) {
 				cmd := commands[1]
 				cmd.Flag.Usage = func() { cmd.Usage() }
-				cmd.Run(cmd, nil)
+				cmd.Run(cmd, []string{msg})
 			}
 		case "3":
 			fmt.Printf("1")

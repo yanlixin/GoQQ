@@ -37,9 +37,9 @@ func DebugLog(format string, a ...interface{}) {
 	}
 }
 func ColorLog(format string, a ...interface{}) {
-	if nil != Logger {
-		Logger.Error(fmt.Sprintf(format, a...))
-	}
+	//if nil != Logger {
+	//	Logger.Error(fmt.Sprintf(format, a...))
+	//}
 	fmt.Print(ColorLogS(format, a...))
 }
 func ColorLogS(format string, a ...interface{}) string {
